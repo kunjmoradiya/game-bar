@@ -1,0 +1,4 @@
+import { db, storage } from 'hatchable';
+export const access='user';
+export const methods=['GET'];
+export default async function(req,res){const id=String(req.params.id||''),q=await db.query("SELECT attachment_key,attachment_name,attachment_type FROM user_requests WHERE id=$1 AND user_id=$2",[id,req.user.id]);if(!q.rows.length||!q.rows[0].attachment_key)return res.status(404).json({error:'Attachment not found.'});const a=q.rows[0],file=await storage.get(a.attachment_key);res.setHeader('Content-Type',a.attachment_type||file.contentType||'application/octet-stream');res.setHeader('Content-Disposition','inline; filename="'+String(a.attachment_name||'attachment').replace(/["\\r\\n]/g,'')+'"');res.setHeader('Cache-Control','private, no-store');return res.send(file.buffer);}

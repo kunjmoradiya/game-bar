@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS player_profiles_username_unique_ci ON player_profiles (LOWER(username)) WHERE username <> '';

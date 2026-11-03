@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090c18">
+<title>Play Game — Game Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css?v=35"><link rel="stylesheet" href="/play.css?v=35">
+<script src="/play.js?v=42" defer></script><!-- game-session.js owns play-page presence and heartbeats -->
+</head>
+<body class="player-page">
+<header class="site-header player-header"><a class="brand" href="/"><span class="brand-mark">G</span><span>GAME<span class="brand-accent">HUB</span></span></a><a class="back-link" href="/">← Back to Game Hub</a></header>
+<main class="player-main">
+  <div class="player-top"><div><div class="eyebrow">NOW PLAYING ON GAME HUB</div><h1 id="gameTitle">Loading game…</h1><p id="gameDescription">Getting your game ready.</p></div><div class="player-actions"><button id="reloadGame" class="player-button" type="button">↻ Restart</button><button id="fullscreenGame" class="player-button primary" type="button">⛶ Fullscreen</button></div></div>
+  <div class="game-stage" id="gameStage"><div class="player-loading"><span class="loader"></span><p>Preparing your game…</p></div><iframe id="gameFrame" title="Playable game" sandbox="allow-scripts allow-pointer-lock allow-forms allow-presentation" allow="fullscreen; autoplay; gamepad" allowfullscreen hidden></iframe></div>
+  <div class="player-bottom"><span id="gameCategory">GAME HUB PLAYER</span><span>Having trouble? Try restarting the game.</span></div>
+  <div class="player-error" id="playerError" hidden><b>Game unavailable</b><p>This game may have been unpublished or removed. Return to the library to choose another game.</p><a class="button button-primary" href="/">Browse games →</a></div>
+</main>
+<footer class="site-footer"><a class="brand" href="/"><span class="brand-mark">G</span><span>GAME<span class="brand-accent">HUB</span></span></a><span>Play More. Explore More.</span><span>© <span id="year"></span> Game Hub</span></footer>
+</body></html>

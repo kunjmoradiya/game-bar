@@ -1,0 +1,1 @@
+ALTER TABLE game_activity DROP COLUMN IF EXISTS user_id;
