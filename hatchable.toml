@@ -1,0 +1,98 @@
+[auth]
+enabled = true
+providers = ["email", "google"]
+
+[db.tables.user_requests]
+read = "own"
+write = "own"
+
+[db.tables.user_notifications]
+read = "own"
+write = "own"
+[db.tables.game_favorites]
+read = "own"
+write = "own"
+
+[db.tables.game_play_sessions]
+read = "public"
+write = "own"
+
+[db.tables.game_submissions]
+read = "own"
+write = "own"
+
+[db.tables.player_profiles]
+read = "public"
+write = "own"
+
+[db.tables.player_id_registry]
+read = "own"
+write = "own"
+
+[db.tables.verified_game_scores]
+read = "public"
+write = "member"
+
+[db.tables.player_leaderboard_controls]
+read = "public"
+write = "member"
+
+[db.tables.leaderboard_settings]
+read = "public"
+write = "member"
+
+[db.tables.player_challenge_completions]
+read = "public"
+write = "member"
+
+[db.tables.ranking_audit_logs]
+read = "member"
+write = "member"
+
+[db.tables.player_session_moderation]
+read = "public"
+write = "member"
+
+[db.tables.player_achievements]
+read = "public"
+write = "own"
+
+[db.tables.player_presence]
+read = "public"
+write = "own"
+
+[db.tables.player_ranking_history]
+read = "own"
+write = "member"
+
+[db.tables.leaderboard_seasons]
+read = "public"
+write = "member"
+
+[db.tables.player_session_daily_activity]
+read = "public"
+write = "own"
+
+[db.tables.supercoin_wallets]
+read = "own"
+write = "own"
+
+[db.tables.supercoin_transactions]
+read = "own"
+write = "own"
+
+[db.tables.supercoin_redemptions]
+read = "own"
+write = "own"
+
+[db.tables.gamer_ranking_snapshots]
+read = "public"
+write = "member"
+
+[[cron]]
+path = "/api/jobs/expire-player-presence"
+schedule = "0 * * * *"
+
+[[cron]]
+path = "/api/jobs/snapshot-player-ranks"
+schedule = "0 0 * * *"

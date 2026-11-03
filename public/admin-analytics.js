@@ -1,0 +1,40 @@
+(()=> {
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let cfg={};
+function msg(s,bad=false){$('message').textContent=s;$('message').className=bad?'message dangerText':'message'}
+async function api(method='GET',body=null,query=''){
+ const r=await fetch('/api/admin/analytics'+query,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store'});
+ const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Request failed');return d;
+}
+function renderPlayers(rows){
+ if(!rows.length){$('players').innerHTML='<p class="muted">No player found.</p>';return;}
+ $('players').innerHTML=rows.map(p=>{
+  const sessions=(p.sessions||[]).map(s=>'<div class="item"><b>'+esc(s.game_name)+'</b><small>'+new Date(s.started_at).toLocaleString()+' · '+Math.floor((Number(s.active_duration_seconds)||0)/60)+' active minutes · '+esc(s.session_status)+' · '+esc(s.completion_status)+'</small>'+(s.suspicious_reason?'<small class="dangerText">Flag: '+esc(s.suspicious_reason)+'</small>':'')+'<div class="actions"><button class="btn danger" data-flag="'+esc(s.session_key)+'">Flag / exclude session</button></div></div>').join('');
+  const achievements=(p.achievements||[]).map(a=>'<div class="item">🏅 '+esc(a.title)+' · '+a.reward_points+' pts</div>').join('');
+  const suspended=!!p.settings.leaderboard_suspended;
+  return '<article class="item"><div class="row"><div><b>'+esc(p.username||'Player')+'</b><small>'+esc(p.player_id)+' · '+(p.verified?'Email verified':'Unverified')+' · '+esc(p.email)+'</small><small>'+Number(p.stats.total_sessions||0)+' verified sessions · '+(Number(p.stats.seconds||0)/3600).toFixed(2)+' hours · '+Number(p.stats.games||0)+' games</small></div><div class="actions"><button class="btn '+(suspended?'':'danger')+'" data-moderate="'+esc(p.player_id)+'" data-action="'+(suspended?'restore':'suspend')+'">'+(suspended?'Restore ranking':'Suspend ranking')+'</button><button class="btn secondary" data-challenge="'+esc(p.player_id)+'" data-kind="daily">Award daily challenge</button><button class="btn secondary" data-challenge="'+esc(p.player_id)+'" data-kind="weekly">Award weekly challenge</button></div></div><details><summary>Session history, achievements & audit</summary><div class="list">'+(sessions||'<p class="muted">No sessions recorded.</p>')+achievements+'</div></details></article>';
+ }).join('');
+ $('players').querySelectorAll('[data-moderate]').forEach(b=>b.onclick=async()=>{const reason=prompt('Enter the moderation reason:');if(!reason)return;try{await api('PUT',{action:b.dataset.action,player_id:b.dataset.moderate,reason});msg('Player leaderboard status updated and audited.');searchPlayers();}catch(e){msg(e.message,true);}});
+ $('players').querySelectorAll('[data-flag]').forEach(b=>b.onclick=async()=>{const reason=prompt('Why should this session be excluded from rankings?');if(!reason)return;try{await api('PUT',{action:'flag_session',session_id:b.dataset.flag,reason});msg('Session flagged and removed from verified rankings.');searchPlayers();load();}catch(e){msg(e.message,true);}});
+ $('players').querySelectorAll('[data-challenge]').forEach(b=>b.onclick=async()=>{const key=prompt('Challenge key (unique for this period):','owner-award');if(key===null)return;try{const d=await api('PUT',{action:'award_challenge',player_id:b.dataset.challenge,kind:b.dataset.kind,challenge_key:key});msg('Challenge awarded: '+d.reward_points+' points.');load();}catch(e){msg(e.message,true);}});
+}
+async function searchPlayers(){const q=$('playerQuery').value.trim();if(!q)return;try{const d=await api('GET',null,'?q='+encodeURIComponent(q));renderPlayers(d.players||[]);}catch(e){msg(e.message,true);}}
+async function load(){
+ try{
+  const d=await api();const m=d.metrics||{};cfg=d.settings||{};
+  [['registered',m.registered_players],['online',m.online_players],['playing',m.playing_players],['hours',(Number(m.total_active_seconds||0)/3600).toFixed(1)],['sessions',m.total_sessions],['dau',m.daily_active_users],['wau',m.weekly_active_users],['mau',m.monthly_active_users]].forEach(x=>$(x[0]).textContent=Number(x[1]||0).toLocaleString());
+  $('topGames').innerHTML=(d.top_games||[]).map(g=>'<div class="item row"><b>'+esc(g.name)+'</b><span>'+g.sessions+' sessions · '+(Number(g.seconds||0)/3600).toFixed(1)+'h</span></div>').join('')||'No verified game activity yet.';$('topPlayers').innerHTML=(d.top_players||[]).map(p=>'<div class="item row"><b>'+esc(p.username||p.player_id)+'</b><span>'+esc(p.player_id)+' · '+p.sessions+' sessions · '+(Number(p.seconds||0)/3600).toFixed(1)+'h</span></div>').join('')||'No verified player activity yet.';
+  const max=Math.max(1,...(d.daily_activity||[]).map(x=>Number(x.active_users)));
+  $('activity').innerHTML=(d.daily_activity||[]).map(x=>'<div class="item"><div class="row"><b>'+new Date(x.day).toLocaleDateString()+'</b><span>'+x.active_users+' active players</span></div><div class="bar"><i style="width:'+(Number(x.active_users)/max*100)+'%"></i></div><small>'+(Number(x.active_seconds||0)/3600).toFixed(1)+' active hours</small></div>').join('')||'No activity in this period.';
+  $('enabled').value=String(cfg.enabled!==false);$('ppm').value=cfg.points_per_active_minute??1;$('timecap').value=cfg.daily_time_cap_minutes??120;$('sessionpoints').value=cfg.points_per_completed_session??10;$('sessioncap').value=cfg.daily_session_cap_points??50;$('achievement').value=cfg.achievement_reward_points??25;$('special').value=cfg.special_achievement_reward_points??50;$('dailyreward').value=cfg.daily_challenge_reward_points??20;$('dailycap').value=cfg.daily_challenge_cap_points??40;$('weeklyreward').value=cfg.weekly_challenge_reward_points??100;
+  $('suspicious').innerHTML=(d.suspicious||[]).map(s=>'<div class="item"><b>'+esc(s.username||s.player_id||'Player')+' · '+esc(s.game_name)+'</b><small>'+new Date(s.started_at).toLocaleString()+' · '+esc(s.suspicious_reason)+'</small></div>').join('')||'<p class="muted">No suspicious sessions flagged.</p>';
+  $('audit').innerHTML=(d.audit_logs||[]).map(a=>'<div class="item"><b>'+esc(a.action)+' · '+esc(a.username||a.player_id||'System')+'</b><small>'+esc(a.reason)+' · '+esc(a.actor_id)+' · '+new Date(a.created_at).toLocaleString()+' · '+a.points_changed+' pts</small></div>').join('')||'<p class="muted">No moderation actions yet.</p>';$('seasons').innerHTML=(d.seasons||[]).map(s=>'<div class="item"><b>'+esc(s.name)+'</b><small>'+esc(s.status)+' · started '+new Date(s.starts_at).toLocaleString()+(s.ends_at?' · ended '+new Date(s.ends_at).toLocaleString():'')+'</small></div>').join('')||'<p class="muted">No ranking seasons configured.</p>';
+ }catch(e){msg(e.message,true);}
+}
+$('settings').onsubmit=async e=>{e.preventDefault();const n=id=>Number($(id).value);try{await api('PUT',{action:'settings',enabled:$('enabled').value==='true',points_per_active_minute:n('ppm'),daily_time_cap_minutes:n('timecap'),points_per_completed_session:n('sessionpoints'),daily_session_cap_points:n('sessioncap'),achievement_reward_points:n('achievement'),special_achievement_reward_points:n('special'),daily_challenge_reward_points:n('dailyreward'),daily_challenge_cap_points:n('dailycap'),weekly_challenge_reward_points:n('weeklyreward')});msg('Leaderboard scoring configuration saved and audited.');load();}catch(e){msg(e.message,true);}};
+$('seasonForm').onsubmit=async e=>{e.preventDefault();const name=$('seasonName').value.trim();if(!name)return;if(!confirm('Start a new season? The current season will be closed, but its records will remain.'))return;try{await api('PUT',{action:'reset_season',name});$('seasonName').value='';msg('New leaderboard season started.');load();}catch(err){msg(err.message,true);}};$('playerSearch').onsubmit=e=>{e.preventDefault();searchPlayers();};
+$('refresh').onclick=load;
+load();
+})();

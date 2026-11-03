@@ -1,0 +1,5 @@
+import { db, storage } from 'hatchable';
+export const access='admin';
+export const methods=['GET'];
+const OWNER_HANDLE='moradiyakunj1';
+export default async function(req,res){if(req.member?.handle!==OWNER_HANDLE)return res.status(403).json({error:'Owner access required.'});const q=await db.query("SELECT attachment_key,attachment_name,attachment_type FROM user_requests WHERE id=$1",[req.params.id]);if(!q.rows.length||!q.rows[0].attachment_key)return res.status(404).json({error:'Attachment not found.'});const a=q.rows[0],f=await storage.get(a.attachment_key);res.setHeader('Content-Type',a.attachment_type||f.contentType||'application/octet-stream');res.setHeader('Content-Disposition','inline; filename="'+String(a.attachment_name||'attachment').replace(/["\\r\\n]/g,'')+'"');res.setHeader('Cache-Control','private, no-store');return res.send(f.buffer);}
